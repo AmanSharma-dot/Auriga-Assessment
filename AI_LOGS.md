@@ -11,6 +11,62 @@ GitHub is connected. I’ll now create the public repository, push the current p
 
 There is already a public repository named `Auriga-Assessment`, so I’ll use that instead of creating a duplicate. I’m checking its current branch and contents first, then I’ll update it with this solution and verify the required files are present at the root.
 
+User accepted the proposed integration connection:conn_github_01M2MRY6PYRE71AV7YEJGHSAH5 (GitHub). It is attached to this environment and ready to use. The connection_information block below belongs in application code written to disk, not in the codeExecution sandbox — in a conversation, ignore it and call the connection's API with the connectorFetch callback instead.
+
+# Connection: GitHub
+
+**Integration ID:** `connection:conn_github_01M2MRY6PYRE71AV7YEJGHSAH5`
+**Status:** added
+**Connector:** `github`
+
+Connect to GitHub to manage repositories, issues, pull requests, and more.
+
+Documentation: https://docs.github.com/en/rest
+
+## SDK setup
+
+### JavaScript
+
+Package: `@octokit/rest` @ `21.1.1`
+
+```js
+import { ReplitConnectors } from "@replit/connectors-sdk";
+
+const connectors = new ReplitConnectors();
+
+// Make authenticated requests to GitHub
+// The SDK handles identity, token refresh, and auth headers automatically.
+const response = await connectors.proxy("github", "/your/api/endpoint", {
+  method: "GET",
+});
+```
+
+### Python
+
+Package: `replit-connectors` @ `latest`
+
+```python
+from replit_connectors import ReplitConnectors
+
+connectors = ReplitConnectors()
+
+# Make authenticated requests to GitHub
+# The SDK handles identity, token refresh, and auth headers automatically.
+response = connectors.proxy("github", "/your/api/endpoint", method="GET")
+
+print(response)
+```
+
+## Setup instructions
+
+Call the GitHub REST API through the authenticated proxy: connectors.proxy("github", "/path"). Paths are relative to the connection's API base URL — https://api.github.com by default, or https://<your-host>/api/v3 for GitHub Enterprise Server. Credentials are injected automatically. The proxy returns a raw Response object — check response.ok, then call .json().
+
+queryId: inv_1dEn8fgJIj9o3dnrpxgjRczV2Sv3TzQY8N:call_w1bZcj3qlwOky1NVKJimLBnA
+
+GitHub is connected. I’ll now create the public repository, push the current project files including the three required root documents, and verify the repository metadata and default branch through GitHub’s API.
+
+There is already a public repository named `Auriga-Assessment`, so I’ll use that instead of creating a duplicate. I’m checking its current branch and contents first, then I’ll update it with this solution and verify the required files are present at the root.
+
 Friday night at the multiplex
 The multiplex booking counter keeps mis-pricing tickets and the queue is getting angry. Seats come in tiers — Silver, Gold, Recliner — at different prices, and by showtime some tiers sell out and shouldn’t be bookable. There are offers on: a flat festival discount and a percentage off for members (capped). Every booking then adds a small per-ticket convenience fee and GST on top, and it all has to total to the exact paisa. Customers keep demanding a clear line-by-line breakup of the bill.
 Build a pricing engine the counter can trust.
