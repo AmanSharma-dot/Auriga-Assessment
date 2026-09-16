@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import gsap from "gsap";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -132,6 +134,7 @@ function App() {
   const [tiers, setTiers] = useState<Tier[]>(TIERS);
   const [pricingRules, setPricingRules] = useState<PricingRules>(DEFAULT_RULES);
   const [totals, setTotals] = useState<Quote>(EMPTY_TOTALS);
+  const appRef = useRef<HTMLElement>(null);
 
   const selectedShow = shows.find((show) => show.id === selectedShowId) ?? null;
 
@@ -201,6 +204,35 @@ function App() {
     };
   }, [selectedShowId, basket, festivalEnabled, memberEnabled]);
 
+  useEffect(() => {
+    if (!appRef.current || !shows.length) return;
+    const context = gsap.context(() => {
+      gsap.fromTo(
+        ".show-progress span",
+        { scaleX: 0, transformOrigin: "left center" },
+        { scaleX: 1, duration: 0.8, stagger: 0.08, ease: "power2.out" },
+      );
+      gsap.fromTo(
+        ".summary-card",
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.65, ease: "power3.out" },
+      );
+    }, appRef.current);
+    return () => context.revert();
+  }, [shows, selectedShowId]);
+
+  useEffect(() => {
+    if (!appRef.current || totals.total === 0) return;
+    const context = gsap.context(() => {
+      gsap.fromTo(
+        ".total-row strong",
+        { scale: 0.94, color: "#70c6bb" },
+        { scale: 1, color: "#f5fbf9", duration: 0.42, ease: "back.out(1.7)" },
+      );
+    }, appRef.current);
+    return () => context.revert();
+  }, [totals.total]);
+
   function setShow(show: Show) {
     setSelectedShowId(show.id);
     setBasket((current) => ({
@@ -258,8 +290,19 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
+    <motion.main
+      ref={appRef}
+      className="app-shell"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+    >
+      <motion.header
+        className="topbar"
+        initial={{ y: -18, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.55, ease: "easeOut" }}
+      >
         <div className="brand-lockup">
           <div className="brand-mark">
             <Ticket size={18} strokeWidth={2.4} />
@@ -288,10 +331,15 @@ function App() {
             AM
           </button>
         </div>
-      </header>
+      </motion.header>
 
       <div className="page-wrap">
-        <div className="page-heading">
+        <motion.div
+          className="page-heading"
+          initial={{ y: 14, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.16, duration: 0.55, ease: "easeOut" }}
+        >
           <div>
             <div className="eyebrow"><span /> LIVE BOOKING DESK</div>
             <h1>Friday night, sorted.</h1>
@@ -309,10 +357,15 @@ function App() {
               {apiError || (isLoading ? "Loading live inventory…" : "Live inventory synced")}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         <div className="workspace-grid">
-          <section className="booking-column">
+          <motion.section
+            className="booking-column"
+            initial={{ y: 16, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.22, duration: 0.6, ease: "easeOut" }}
+          >
             <div className="section-label">
               <span className="section-number">01</span>
               <div>
@@ -333,10 +386,15 @@ function App() {
                   0,
                 );
                 return (
-                  <button
+                  <motion.button
                     key={show.id}
                     className={`show-card ${isSelected ? "selected" : ""}`}
                     onClick={() => setShow(show)}
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.28 + shows.indexOf(show) * 0.06, duration: 0.4 }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.985 }}
                   >
                     <div className="show-card-top">
                       <span className={`selection-indicator ${isSelected ? "checked" : ""}`}>
@@ -353,7 +411,7 @@ function App() {
                     <div className="show-progress">
                       <span style={{ width: `${(availableSeats / show.totalSeats) * 100}%` }} />
                     </div>
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
@@ -376,7 +434,13 @@ function App() {
                 const quantity = basket[tier.id];
                 const soldOut = available === 0;
                 return (
-                  <div className={`tier-row ${soldOut ? "sold-out" : ""}`} key={tier.id}>
+                  <motion.div
+                    className={`tier-row ${soldOut ? "sold-out" : ""}`}
+                    key={tier.id}
+                    initial={{ x: -8, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 + tiers.indexOf(tier) * 0.06, duration: 0.38 }}
+                  >
                     <div className={`tier-swatch ${tier.color}`} />
                     <div className="tier-info">
                       <div className="tier-title-line">
@@ -406,7 +470,7 @@ function App() {
                         <Plus size={15} />
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -420,7 +484,7 @@ function App() {
             </div>
 
             <div className="offers-grid">
-              <OfferCard
+                <OfferCard
                 active={festivalEnabled}
                 icon={<Sparkles size={17} />}
                 eyebrow="OFFER 01"
@@ -444,10 +508,19 @@ function App() {
               <Info size={16} />
               <span>GST is calculated on the discounted ticket value plus the convenience fee.</span>
             </div>
-          </section>
+          </motion.section>
 
-          <aside className="summary-column">
-            <div className="summary-card">
+          <motion.aside
+            className="summary-column"
+            initial={{ x: 16, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.28, duration: 0.65, ease: "easeOut" }}
+          >
+            <motion.div
+              className="summary-card"
+              layout
+              transition={{ layout: { duration: 0.3, ease: "easeOut" } }}
+            >
               <div className="summary-topline">
                 <div>
                   <div className="summary-kicker">BOOKING SUMMARY</div>
@@ -543,7 +616,7 @@ function App() {
                 <ShieldCheck size={14} />
                 Exact paisa calculation · No hidden charges
               </div>
-            </div>
+            </motion.div>
 
             <div className="audit-card">
               <div className="audit-icon"><Check size={15} strokeWidth={2.5} /></div>
@@ -553,21 +626,30 @@ function App() {
               </div>
               <ArrowDownRight size={15} className="audit-arrow" />
             </div>
-          </aside>
+          </motion.aside>
         </div>
       </div>
 
+      <AnimatePresence>
       {showReceipt && (
-        <div className="toast" role="status">
+        <motion.div
+          className="toast"
+          role="status"
+          initial={{ opacity: 0, y: 14, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 10, scale: 0.97 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+        >
           <div className="toast-icon"><Check size={16} /></div>
           <div>
             <strong>Booking ready to collect</strong>
             <span>{bookingId ?? "Saved"} · {totals.tickets} tickets · {formatMoney(totals.total)}</span>
           </div>
           <button onClick={() => setShowReceipt(false)} aria-label="Dismiss confirmation">×</button>
-        </div>
+        </motion.div>
       )}
-    </main>
+      </AnimatePresence>
+    </motion.main>
   );
 }
 

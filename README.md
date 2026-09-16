@@ -9,6 +9,8 @@ Cine Ledger is a cinema counter pricing console built for the Auriga assessment.
 - Vite
 - Node.js + Express API
 - JSON-backed persistent counter store
+- Framer Motion
+- GSAP
 - Lucide React
 - CSS with responsive layouts
 

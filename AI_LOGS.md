@@ -148,6 +148,16 @@ The API and development preview are working. The production start check found on
 
 The production server now starts cleanly on its own port, and the Replit workflow has been restarted on the dynamic server. I’m recording this implementation step in the required transcript, then I’ll push the full-stack version to the public repository and verify the new files remotely.
 
+use gsap and framer motion for animation
+
+I’ll add both animation systems without changing the pricing behavior: Framer Motion for component transitions and interaction feedback, and GSAP for the live inventory/progress and summary-card entrance choreography. Then I’ll rebuild, restart the preview, and check the rendered result.
+
+The animation layer is wired in: Framer Motion handles page/card entrances, hover/tap feedback, the summary layout transition, and confirmation toast; GSAP handles the progress bars, summary entrance, and total amount emphasis when the quote changes. I’m building now to catch any JSX or typing issues before previewing it.
+
+The build passes with both animation libraries included. I’m restarting the running workflow once so the dependency change is active, then I’ll capture the final preview and inspect the browser log.
+
+The animated preview is clean with no browser errors. I’m syncing the animation changes and documentation to the public GitHub repository so the repository stays aligned with the running app.
+
 Friday night at the multiplex
 The multiplex booking counter keeps mis-pricing tickets and the queue is getting angry. Seats come in tiers — Silver, Gold, Recliner — at different prices, and by showtime some tiers sell out and shouldn’t be bookable. There are offers on: a flat festival discount and a percentage off for members (capped). Every booking then adds a small per-ticket convenience fee and GST on top, and it all has to total to the exact paisa. Customers keep demanding a clear line-by-line breakup of the bill.
 Build a pricing engine the counter can trust.

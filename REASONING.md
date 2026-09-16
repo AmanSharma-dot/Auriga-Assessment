@@ -71,6 +71,8 @@ The design is intentionally made for a busy counter:
 - The final amount is accompanied by a “pricing checks passed” message and a visible note that GST includes the fee.
 - Responsive styles preserve the same flow on narrow screens.
 
+Animation is split by responsibility. Framer Motion handles React-owned entrance, hover, tap, layout, and confirmation-toast transitions. GSAP handles the small imperative sequences that respond to live data: progress-bar fills, the summary card entrance, and the final amount emphasis when a new quote arrives. This keeps the motion visible but subordinate to the counter workflow.
+
 ## Trade-offs and limitations
 
 This submission keeps the data layer local so an evaluator can clone and run it with only npm, while still exposing a real API and persisting bookings. A production cinema counter serving multiple server instances would move the JSON store to PostgreSQL with a transaction or row lock for seat reservation. The next reliability step would be automated tests for discount caps, tax rounding, sold-out tiers, and receipt reconciliation.
