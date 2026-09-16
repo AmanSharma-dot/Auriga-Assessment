@@ -1,0 +1,41 @@
+{
+  "shows": [
+    {
+      "id": "early",
+      "time": "6:15 PM",
+      "label": "Early show",
+      "hall": "Audi 04",
+      "totalSeats": 78,
+      "availability": {
+        "silver": 42,
+        "gold": 16,
+        "recliner": 4
+      }
+    },
+    {
+      "id": "prime",
+      "time": "8:45 PM",
+      "label": "Prime time",
+      "hall": "Audi 04",
+      "totalSeats": 78,
+      "availability": {
+        "silver": 0,
+        "gold": 9,
+        "recliner": 6
+      }
+    },
+    {
+      "id": "late",
+      "time": "10:55 PM",
+      "label": "Late show",
+      "hall": "Audi 02",
+      "totalSeats": 78,
+      "availability": {
+        "silver": 18,
+        "gold": 3,
+        "recliner": 0
+      }
+    }
+  ],
+  "bookings": []
+}

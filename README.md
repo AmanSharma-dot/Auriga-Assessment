@@ -7,6 +7,8 @@ Cine Ledger is a cinema counter pricing console built for the Auriga assessment.
 - React 19
 - TypeScript
 - Vite
+- Node.js + Express API
+- JSON-backed persistent counter store
 - Lucide React
 - CSS with responsive layouts
 
@@ -29,7 +31,7 @@ npm install
 npm run dev
 ```
 
-The Vite server runs on port `5000` and binds to `0.0.0.0` so it works in the Replit preview.
+This starts the Express API and Vite frontend together. The server runs on port `5000` and binds to `0.0.0.0` so it works in the Replit preview.
 
 ### Create a production build
 
@@ -50,7 +52,8 @@ npm run preview
 3. Check the browser console for runtime errors.
 4. If the preview is blank in Replit, confirm the `Start application` workflow is running and that the app is using port `5000`.
 5. If dependencies are out of date, remove `node_modules` and `package-lock.json`, then run `npm install` again.
-6. Run `npm run build` to catch TypeScript errors before making a submission.
+6. Check the API directly with `curl http://localhost:5000/api/shows`.
+7. Run `npm run build` to catch TypeScript errors before making a submission.
 
 ## Pricing rules
 
@@ -64,13 +67,30 @@ All money calculations are performed using integer paise:
 - Convenience fee: ₹22.00 per ticket
 - GST: 18% on the discounted ticket value plus the convenience fee
 
-The receipt shows each tier, subtotal, discount, fee, GST, and final total from the same calculation function.
+The receipt shows each tier, subtotal, discount, fee, GST, and final total from the same server-side calculation function.
+
+## Dynamic API
+
+The browser uses these API routes:
+
+```text
+GET  /api/config
+GET  /api/shows
+POST /api/quotes
+POST /api/bookings
+GET  /api/bookings/:id
+```
+
+Show availability and saved bookings are stored in `server/store.json`. Booking confirmation updates availability and keeps the booking in the store after a page refresh. The write queue serializes bookings within the running server process so two overlapping requests cannot update the same JSON file at the same time.
 
 ## Repository structure
 
 ```text
 .
 ├── public/favicon.svg
+├── server/index.js
+├── server/pricing.js
+├── server/store.json
 ├── src/App.tsx
 ├── src/main.tsx
 ├── src/styles.css
@@ -82,4 +102,4 @@ The receipt shows each tier, subtotal, discount, fee, GST, and final total from 
 
 ## Current scope
 
-The app is a self-contained frontend assessment implementation. Showtimes and inventory are representative in-memory data, which keeps the assessment easy to run without a backend or external credentials. Persistent inventory, concurrency-safe seat reservation, and a payment provider can be added as a follow-up.
+The app is a working full-stack assessment implementation with a local persistent store. It is intentionally dependency-light and does not require external credentials or a hosted database. For a multi-instance production deployment, replace `server/store.json` with a transactional PostgreSQL store and add authentication, but the frontend/API boundary and server-side pricing flow are already in place.

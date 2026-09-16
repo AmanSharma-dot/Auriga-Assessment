@@ -50,7 +50,15 @@ The festival discount is limited to the ticket subtotal, so the price cannot bec
 
 Each showtime has availability for Silver, Gold, and Recliner tiers. When a tier has zero seats, the row is visibly marked as sold out and its quantity controls are disabled. Switching showtimes clamps any existing basket quantities to the new show's availability, preventing the UI from carrying an invalid booking between shows.
 
+The data is served by an Express API instead of being embedded in the React screen. Showtimes and bookings are persisted in `server/store.json`; the browser reloads inventory from the API, and confirming a booking decrements the selected tier availability. The server validates availability again before saving, so a modified browser request cannot bypass the sold-out rule.
+
 The data is modeled as arrays and records rather than being tied to one screen element, so another cinema can replace the showtime and tier data without changing the pricing flow.
+
+## Dynamic architecture
+
+The frontend calls `/api/config` and `/api/shows` on startup. Each basket or offer change sends the current selection to `/api/quotes`, which returns the authoritative server-side calculation. Confirmation posts the same payload to `/api/bookings`; the server recalculates the quote, checks current availability, updates the store, and returns a booking identifier.
+
+This keeps the UI responsive while making the server the source of truth for the amount collected. A small serialized write queue protects the JSON store from overlapping writes during local development and assessment runs.
 
 ## Interface decisions
 
@@ -65,7 +73,7 @@ The design is intentionally made for a busy counter:
 
 ## Trade-offs and limitations
 
-This submission keeps the data layer local so an evaluator can clone and run it with only npm. A production cinema counter would move showtime inventory, pricing rules, and confirmed bookings into a server-side store with transactional seat reservation. The next reliability step would be automated tests for discount caps, tax rounding, sold-out tiers, and receipt reconciliation.
+This submission keeps the data layer local so an evaluator can clone and run it with only npm, while still exposing a real API and persisting bookings. A production cinema counter serving multiple server instances would move the JSON store to PostgreSQL with a transaction or row lock for seat reservation. The next reliability step would be automated tests for discount caps, tax rounding, sold-out tiers, and receipt reconciliation.
 
 ## Verification
 

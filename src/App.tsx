@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -62,40 +62,52 @@ const TIERS: Tier[] = [
   },
 ];
 
-const SHOWS: Show[] = [
-  {
-    id: "early",
-    time: "6:15 PM",
-    label: "Early show",
-    hall: "Audi 04",
-    availability: { silver: 42, gold: 16, recliner: 4 },
-    totalSeats: 78,
-  },
-  {
-    id: "prime",
-    time: "8:45 PM",
-    label: "Prime time",
-    hall: "Audi 04",
-    availability: { silver: 0, gold: 9, recliner: 6 },
-    totalSeats: 78,
-  },
-  {
-    id: "late",
-    time: "10:55 PM",
-    label: "Late show",
-    hall: "Audi 02",
-    availability: { silver: 18, gold: 3, recliner: 0 },
-    totalSeats: 78,
-  },
-];
-
-const FESTIVAL_DISCOUNT = 15000;
-const MEMBER_RATE = 0.12;
-const MEMBER_CAP = 18000;
-const CONVENIENCE_FEE = 2200;
-const GST_RATE = 0.18;
-
 const INITIAL_BASKET: Basket = { silver: 2, gold: 1, recliner: 0 };
+
+type PricingRules = {
+  festivalDiscount: number;
+  memberRate: number;
+  memberCap: number;
+  convenienceFee: number;
+  gstRate: number;
+};
+
+type QuoteLine = Tier & {
+  quantity: number;
+  lineTotal: number;
+};
+
+type Quote = {
+  ticketLines: QuoteLine[];
+  ticketSubtotal: number;
+  tickets: number;
+  festivalDiscount: number;
+  memberDiscount: number;
+  convenienceFee: number;
+  taxableAmount: number;
+  gst: number;
+  total: number;
+};
+
+const DEFAULT_RULES: PricingRules = {
+  festivalDiscount: 15000,
+  memberRate: 0.12,
+  memberCap: 18000,
+  convenienceFee: 2200,
+  gstRate: 0.18,
+};
+
+const EMPTY_TOTALS: Quote = {
+  ticketLines: [],
+  ticketSubtotal: 0,
+  tickets: 0,
+  festivalDiscount: 0,
+  memberDiscount: 0,
+  convenienceFee: 0,
+  taxableAmount: 0,
+  gst: 0,
+  total: 0,
+};
 
 function formatMoney(paise: number, showDecimals = true) {
   return new Intl.NumberFormat("en-IN", {
@@ -106,54 +118,88 @@ function formatMoney(paise: number, showDecimals = true) {
   }).format(paise / 100);
 }
 
-function calculateTotals(
-  basket: Basket,
-  festivalEnabled: boolean,
-  memberEnabled: boolean,
-) {
-  const ticketLines = TIERS.filter((tier) => basket[tier.id] > 0).map((tier) => ({
-    ...tier,
-    quantity: basket[tier.id],
-    lineTotal: basket[tier.id] * tier.price,
-  }));
-  const ticketSubtotal = ticketLines.reduce((total, line) => total + line.lineTotal, 0);
-  const tickets = Object.values(basket).reduce((total, quantity) => total + quantity, 0);
-  const festivalDiscount = festivalEnabled
-    ? Math.min(FESTIVAL_DISCOUNT, ticketSubtotal)
-    : 0;
-  const afterFestival = ticketSubtotal - festivalDiscount;
-  const rawMemberDiscount = memberEnabled ? Math.round(afterFestival * MEMBER_RATE) : 0;
-  const memberDiscount = Math.min(rawMemberDiscount, MEMBER_CAP, afterFestival);
-  const convenienceFee = tickets * CONVENIENCE_FEE;
-  const taxableAmount = afterFestival - memberDiscount + convenienceFee;
-  const gst = Math.round(taxableAmount * GST_RATE);
-  const total = taxableAmount + gst;
-
-  return {
-    ticketLines,
-    ticketSubtotal,
-    tickets,
-    festivalDiscount,
-    memberDiscount,
-    convenienceFee,
-    taxableAmount,
-    gst,
-    total,
-  };
-}
-
 function App() {
   const [selectedShowId, setSelectedShowId] = useState("early");
   const [basket, setBasket] = useState<Basket>(INITIAL_BASKET);
   const [festivalEnabled, setFestivalEnabled] = useState(true);
   const [memberEnabled, setMemberEnabled] = useState(true);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [shows, setShows] = useState<Show[]>([]);
+  const [tiers, setTiers] = useState<Tier[]>(TIERS);
+  const [pricingRules, setPricingRules] = useState<PricingRules>(DEFAULT_RULES);
+  const [totals, setTotals] = useState<Quote>(EMPTY_TOTALS);
 
-  const selectedShow = SHOWS.find((show) => show.id === selectedShowId) ?? SHOWS[0];
-  const totals = useMemo(
-    () => calculateTotals(basket, festivalEnabled, memberEnabled),
-    [basket, festivalEnabled, memberEnabled],
-  );
+  const selectedShow = shows.find((show) => show.id === selectedShowId) ?? null;
+
+  useEffect(() => {
+    let active = true;
+    async function loadCounterData() {
+      try {
+        const [configResponse, showsResponse] = await Promise.all([
+          fetch("/api/config"),
+          fetch("/api/shows"),
+        ]);
+        if (!configResponse.ok || !showsResponse.ok) {
+          throw new Error("Could not load live counter data.");
+        }
+        const config = await configResponse.json();
+        const nextShows: Show[] = await showsResponse.json();
+        if (!active) return;
+        setTiers(config.tiers);
+        setPricingRules(config.rules);
+        setShows(nextShows);
+        setSelectedShowId((current) =>
+          nextShows.some((show) => show.id === current) ? current : nextShows[0]?.id ?? "",
+        );
+        setIsLoading(false);
+      } catch (error) {
+        if (!active) return;
+        setApiError(error instanceof Error ? error.message : "Could not load live counter data.");
+        setIsLoading(false);
+      }
+    }
+    loadCounterData();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedShowId) return;
+    let active = true;
+    async function loadQuote() {
+      try {
+        const response = await fetch("/api/quotes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            showId: selectedShowId,
+            basket,
+            festivalEnabled,
+            memberEnabled,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Could not calculate the quote.");
+        if (active) {
+          setTotals(payload);
+          setApiError(null);
+        }
+      } catch (error) {
+        if (active) {
+          setApiError(error instanceof Error ? error.message : "Could not calculate the quote.");
+        }
+      }
+    }
+    loadQuote();
+    return () => {
+      active = false;
+    };
+  }, [selectedShowId, basket, festivalEnabled, memberEnabled]);
 
   function setShow(show: Show) {
     setSelectedShowId(show.id);
@@ -168,7 +214,7 @@ function App() {
     setBasket((current) => {
       const nextValue = Math.max(
         0,
-        Math.min(current[tierId] + delta, selectedShow.availability[tierId]),
+        Math.min(current[tierId] + delta, selectedShow?.availability[tierId] ?? 0),
       );
       return { ...current, [tierId]: nextValue };
     });
@@ -179,6 +225,36 @@ function App() {
     setFestivalEnabled(false);
     setMemberEnabled(false);
     setShowReceipt(false);
+    setBookingId(null);
+    setApiError(null);
+  }
+
+  async function confirmBooking() {
+    if (!selectedShow || totals.tickets === 0 || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          showId: selectedShow.id,
+          basket,
+          festivalEnabled,
+          memberEnabled,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Could not save the booking.");
+      const showsResponse = await fetch("/api/shows");
+      if (showsResponse.ok) setShows(await showsResponse.json());
+      setBookingId(payload.id);
+      setShowReceipt(true);
+      setApiError(null);
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : "Could not save the booking.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -229,8 +305,8 @@ function App() {
               Clear booking
             </button>
             <div className="last-sync">
-              <span className="sync-dot" />
-              Inventory synced 12 sec ago
+              <span className={`sync-dot ${apiError ? "sync-error" : ""}`} />
+              {apiError || (isLoading ? "Loading live inventory…" : "Live inventory synced")}
             </div>
           </div>
         </div>
@@ -246,7 +322,11 @@ function App() {
             </div>
 
             <div className="show-grid">
-              {SHOWS.map((show) => {
+              {isLoading && <div className="data-state">Loading live showtimes…</div>}
+              {!isLoading && shows.length === 0 && (
+                <div className="data-state">No live showtimes available.</div>
+              )}
+              {shows.map((show) => {
                 const isSelected = show.id === selectedShowId;
                 const availableSeats = Object.values(show.availability).reduce(
                   (sum, count) => sum + count,
@@ -291,8 +371,8 @@ function App() {
             </div>
 
             <div className="tier-list">
-              {TIERS.map((tier) => {
-                const available = selectedShow.availability[tier.id];
+              {tiers.map((tier) => {
+                const available = selectedShow?.availability[tier.id] ?? 0;
                 const quantity = basket[tier.id];
                 const soldOut = available === 0;
                 return (
@@ -345,7 +425,7 @@ function App() {
                 icon={<Sparkles size={17} />}
                 eyebrow="OFFER 01"
                 title="Festival flat-off"
-                detail="Save ₹150.00 on this booking"
+                detail={`Save ${formatMoney(pricingRules.festivalDiscount)} on this booking`}
                 tag="AUTO-APPLIED"
                 onClick={() => setFestivalEnabled((value) => !value)}
               />
@@ -354,7 +434,7 @@ function App() {
                 icon={<BadgeCheck size={17} />}
                 eyebrow="OFFER 02"
                 title="Auriga member"
-                detail="12% off · capped at ₹180.00"
+                detail={`${Math.round(pricingRules.memberRate * 100)}% off · capped at ${formatMoney(pricingRules.memberCap)}`}
                 tag="MEMBER"
                 onClick={() => setMemberEnabled((value) => !value)}
               />
@@ -386,7 +466,7 @@ function App() {
                   <div className="summary-movie-title">The Night Shift</div>
                   <div className="summary-show-meta">
                     <Clock3 size={13} />
-                    {selectedShow.time} <span>·</span> {selectedShow.hall}
+                    {selectedShow?.time ?? "—"} <span>·</span> {selectedShow?.hall ?? "—"}
                   </div>
                 </div>
                 <ArrowUpRight size={16} className="summary-link-icon" />
@@ -452,11 +532,11 @@ function App() {
 
               <button
                 className="confirm-button"
-                disabled={totals.tickets === 0}
-                onClick={() => setShowReceipt(true)}
+                disabled={totals.tickets === 0 || isSubmitting || !selectedShow}
+                onClick={confirmBooking}
               >
                 <CreditCard size={17} />
-                Confirm booking
+                {isSubmitting ? "Saving booking…" : "Confirm booking"}
                 <ArrowUpRight size={16} />
               </button>
               <div className="secure-note">
@@ -482,7 +562,7 @@ function App() {
           <div className="toast-icon"><Check size={16} /></div>
           <div>
             <strong>Booking ready to collect</strong>
-            <span>{totals.tickets} tickets · {formatMoney(totals.total)}</span>
+            <span>{bookingId ?? "Saved"} · {totals.tickets} tickets · {formatMoney(totals.total)}</span>
           </div>
           <button onClick={() => setShowReceipt(false)} aria-label="Dismiss confirmation">×</button>
         </div>

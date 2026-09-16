@@ -67,6 +67,87 @@ GitHub is connected. I’ll now create the public repository, push the current p
 
 There is already a public repository named `Auriga-Assessment`, so I’ll use that instead of creating a duplicate. I’m checking its current branch and contents first, then I’ll update it with this solution and verify the required files are present at the root.
 
+so can i run this app
+
+Yes. The app is already running in the Replit preview through the `Start application` workflow.
+
+### Run it locally
+
+```bash
+git clone https://github.com/AmanSharma-dot/Auriga-Assessment.git
+cd Auriga-Assessment
+npm install
+npm run dev
+```
+
+Then open:
+
+```text
+http://localhost:5000
+```
+
+Requirements:
+
+- Node.js 20+
+- npm
+
+To verify the production build:
+
+```bash
+npm run build
+```
+
+You can also run it directly from the Replit workspace by opening the Preview panel.
+
+is it static or dynamic
+
+It is **interactive but not fully dynamic**.
+
+### Dynamic in the current app
+
+These work live in the browser:
+
+- Selecting different showtimes
+- Updating Silver, Gold, and Recliner quantities
+- Disabling sold-out tiers
+- Applying/removing festival and member discounts
+- Recalculating convenience fee, GST, and final total
+- Showing the line-by-line bill breakup
+- Confirming and clearing a booking
+
+### Currently static
+
+The following data is stored in `src/App.tsx` as in-memory sample data:
+
+- Movie name
+- Showtimes
+- Seat availability
+- Ticket prices
+- Discount rules
+- Convenience fee
+- GST rate
+
+That means the data resets when the page refreshes. It does not currently have:
+
+- A backend API
+- Database persistence
+- User authentication
+- Multi-counter inventory synchronization
+- Permanent booking storage
+- Real payment processing
+
+so make it dynamic
+
+I’m converting the prototype into a real client/server flow: showtimes and inventory will come from an API, quotes will be calculated server-side in paise, and confirmed bookings will persist in a local data store so refreshes do not reset the booking state.
+
+The frontend now reads live showtimes, configuration, and quote totals from the server, and confirmation writes a booking back to the store. I’m checking the new server/client wiring now, then I’ll restart the workflow and exercise the API directly before updating the GitHub repository.
+
+The live preview now loads showtimes from `/api/shows`, asks the server for every quote, and the API returns the same paise-perfect breakdown shown in the UI. I’m updating the project docs to reflect the new backend and then I’ll verify the production server path before syncing the changes to GitHub.
+
+The API and development preview are working. The production start check found one Express 5 compatibility issue in the SPA fallback route (`*` is no longer accepted); I’m replacing that route with a middleware fallback, then I’ll rerun the production check and sync the fix.
+
+The production server now starts cleanly on its own port, and the Replit workflow has been restarted on the dynamic server. I’m recording this implementation step in the required transcript, then I’ll push the full-stack version to the public repository and verify the new files remotely.
+
 Friday night at the multiplex
 The multiplex booking counter keeps mis-pricing tickets and the queue is getting angry. Seats come in tiers — Silver, Gold, Recliner — at different prices, and by showtime some tiers sell out and shouldn’t be bookable. There are offers on: a flat festival discount and a percentage off for members (capped). Every booking then adds a small per-ticket convenience fee and GST on top, and it all has to total to the exact paisa. Customers keep demanding a clear line-by-line breakup of the bill.
 Build a pricing engine the counter can trust.

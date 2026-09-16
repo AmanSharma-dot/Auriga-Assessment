@@ -206,6 +206,11 @@ button:disabled {
   background: #404753;
 }
 
+.sync-dot.sync-error {
+  background: #d77636;
+  box-shadow: 0 0 0 4px rgba(215, 118, 54, 0.12);
+}
+
 .avatar-button {
   width: 31px;
   height: 31px;
@@ -341,6 +346,18 @@ h1 {
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 35px;
+}
+
+.data-state {
+  grid-column: 1 / -1;
+  min-height: 127px;
+  display: grid;
+  place-items: center;
+  color: #8b959f;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px dashed #d8dee2;
+  border-radius: 10px;
+  font-size: 11px;
 }
 
 .show-card {
